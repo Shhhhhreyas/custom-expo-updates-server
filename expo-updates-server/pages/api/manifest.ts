@@ -19,6 +19,7 @@ import {
 
 export default async function manifestEndpoint(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') {
+    console.log('Expected GET.');
     res.statusCode = 405;
     res.json({ error: 'Expected GET.' });
     return;
@@ -26,6 +27,7 @@ export default async function manifestEndpoint(req: NextApiRequest, res: NextApi
 
   const protocolVersionMaybeArray = req.headers['expo-protocol-version'];
   if (protocolVersionMaybeArray && Array.isArray(protocolVersionMaybeArray)) {
+    console.log('Unsupported protocol version. Expected either 0 or 1.');
     res.statusCode = 400;
     res.json({
       error: 'Unsupported protocol version. Expected either 0 or 1.',
@@ -36,6 +38,7 @@ export default async function manifestEndpoint(req: NextApiRequest, res: NextApi
 
   const platform = req.headers['expo-platform'] ?? req.query['platform'];
   if (platform !== 'ios' && platform !== 'android') {
+    console.log('Unsupported platform. Expected either ios or android.');
     res.statusCode = 400;
     res.json({
       error: 'Unsupported platform. Expected either ios or android.',
@@ -44,7 +47,9 @@ export default async function manifestEndpoint(req: NextApiRequest, res: NextApi
   }
 
   const runtimeVersion = req.headers['expo-runtime-version'] ?? req.query['runtime-version'];
+  console.log('runtimeVersion: ', runtimeVersion);
   if (!runtimeVersion || typeof runtimeVersion !== 'string') {
+    console.log('No runtimeVersion provided.');
     res.statusCode = 400;
     res.json({
       error: 'No runtimeVersion provided.',
@@ -56,6 +61,7 @@ export default async function manifestEndpoint(req: NextApiRequest, res: NextApi
   try {
     updateBundlePath = await getLatestUpdateBundlePathForRuntimeVersionAsync(runtimeVersion);
   } catch (error: any) {
+    console.log('Error in getLatestUpdateBundlePathForRuntimeVersionAsync: ', error.message);
     res.statusCode = 404;
     res.json({
       error: error.message,
@@ -67,6 +73,7 @@ export default async function manifestEndpoint(req: NextApiRequest, res: NextApi
 
   try {
     try {
+      console.log('Came till here: ', updateType);
       if (updateType === UpdateType.NORMAL_UPDATE) {
         await putUpdateInResponseAsync(
           req,
@@ -80,6 +87,7 @@ export default async function manifestEndpoint(req: NextApiRequest, res: NextApi
         await putRollBackInResponseAsync(req, res, updateBundlePath, protocolVersion);
       }
     } catch (maybeNoUpdateAvailableError) {
+      console.log('Error in maybeNoUpdateAvailableError upside: ', maybeNoUpdateAvailableError);
       if (maybeNoUpdateAvailableError instanceof NoUpdateAvailableError) {
         await putNoUpdateAvailableInResponseAsync(req, res, protocolVersion);
         return;
@@ -87,7 +95,7 @@ export default async function manifestEndpoint(req: NextApiRequest, res: NextApi
       throw maybeNoUpdateAvailableError;
     }
   } catch (error) {
-    console.error(error);
+    console.error('Error in maybeNoUpdateAvailableError:', error);
     res.statusCode = 404;
     res.json({ error });
   }
@@ -163,6 +171,7 @@ async function putUpdateInResponseAsync(
   if (expectSignatureHeader) {
     const privateKey = await getPrivateKeyAsync();
     if (!privateKey) {
+      console.log('Code signing requested but no key supplied when starting server.');
       res.statusCode = 400;
       res.json({
         error: 'Code signing requested but no key supplied when starting server.',
@@ -233,6 +242,7 @@ async function putRollBackInResponseAsync(
   if (expectSignatureHeader) {
     const privateKey = await getPrivateKeyAsync();
     if (!privateKey) {
+      console.log('Code signing requested but no key supplied when starting server.');
       res.statusCode = 400;
       res.json({
         error: 'Code signing requested but no key supplied when starting server.',
@@ -282,6 +292,9 @@ async function putNoUpdateAvailableInResponseAsync(
   if (expectSignatureHeader) {
     const privateKey = await getPrivateKeyAsync();
     if (!privateKey) {
+      console.log(
+        'putNoUpdateAvailableInResponseAsync: Code signing requested but no key supplied when starting server.'
+      );
       res.statusCode = 400;
       res.json({
         error: 'Code signing requested but no key supplied when starting server.',
