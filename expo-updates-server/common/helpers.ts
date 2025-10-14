@@ -57,6 +57,7 @@ export async function getLatestUpdateBundlePathForRuntimeVersionAsync(runtimeVer
   )
     .filter(truthy)
     .sort((a, b) => parseInt(b, 10) - parseInt(a, 10));
+  console.log('directoriesInUpdatesDirectory: ', directoriesInUpdatesDirectory);
   return path.join(updatesDirectoryForRuntimeVersion, directoriesInUpdatesDirectory[0]);
 }
 

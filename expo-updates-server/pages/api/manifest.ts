@@ -18,6 +18,7 @@ import {
 } from '../../common/helpers';
 
 export default async function manifestEndpoint(req: NextApiRequest, res: NextApiResponse) {
+  console.log('headers: ', req.headers);
   if (req.method !== 'GET') {
     console.log('Expected GET.');
     res.statusCode = 405;
@@ -60,6 +61,7 @@ export default async function manifestEndpoint(req: NextApiRequest, res: NextApi
   let updateBundlePath: string;
   try {
     updateBundlePath = await getLatestUpdateBundlePathForRuntimeVersionAsync(runtimeVersion);
+    console.log('updateBundlePath: ', updateBundlePath);
   } catch (error: any) {
     console.log('Error in getLatestUpdateBundlePathForRuntimeVersionAsync: ', error.message);
     res.statusCode = 404;
@@ -108,6 +110,7 @@ enum UpdateType {
 
 async function getTypeOfUpdateAsync(updateBundlePath: string): Promise<UpdateType> {
   const directoryContents = await fs.readdir(updateBundlePath);
+  console.log('directoryContents: ', directoryContents);
   return directoryContents.includes('rollback') ? UpdateType.ROLLBACK : UpdateType.NORMAL_UPDATE;
 }
 
@@ -184,6 +187,7 @@ async function putUpdateInResponseAsync(
       sig: hashSignature,
       keyid: 'main',
     });
+    console.log('dictionary: ', dictionary);
     signature = serializeDictionary(dictionary);
   }
 

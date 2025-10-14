@@ -1434,6 +1434,13 @@ browserslist@^4.17.5:
     node-releases "^2.0.2"
     picocolors "^1.0.0"
 
+bsdiff-node@^2.5.0:
+  version "2.5.0"
+  resolved "https://registry.yarnpkg.com/bsdiff-node/-/bsdiff-node-2.5.0.tgz#a8c8fec2fa822f6fab2e4a786de17a9df587c78c"
+  integrity sha512-efTHSHFd/t65Ui7HiGOGr5dMg7X35zHOHWPVngpkEbsr4UtwkHi/BZ5AFFIeVo6Tp4yNX3T62uW2E00ptJrifg==
+  dependencies:
+    nan "^2.18.0"
+
 bser@2.1.1:
   version "2.1.1"
   resolved "https://registry.yarnpkg.com/bser/-/bser-2.1.1.tgz#e6787da20ece9d07998533cfd9de6f5c38f4bc05"
@@ -3357,6 +3364,11 @@ mz@^2.7.0:
     any-promise "^1.0.0"
     object-assign "^4.0.1"
     thenify-all "^1.0.0"
+
+nan@^2.18.0:
+  version "2.23.0"
+  resolved "https://registry.yarnpkg.com/nan/-/nan-2.23.0.tgz#24aa4ddffcc37613a2d2935b97683c1ec96093c6"
+  integrity sha512-1UxuyYGdoQHcGg87Lkqm3FzefucTa0NAiOcuRsDmysep3c1LVCRK2krrUDafMWtjSG04htvAmvg96+SDknOmgQ==
 
 nanoid@^3.1.30:
   version "3.3.2"
