@@ -46,14 +46,32 @@ RCT_EXPORT_METHOD(applyPatch:(NSString *)patchFilePath
                   rejecter:(RCTPromiseRejectBlock)reject)
 {
   NSString *oldFilePath = [self currentHermesBundlePath];
+  RCTLog(@"Check the oold bundle path: %@", oldFilePath);
   if (!oldFilePath) {
     reject(@"NO_BUNDLE_FOUND", @"Could not find Hermes bundle path.", nil);
     return;
   }
+  
+  NSFileManager *fileManager = [NSFileManager defaultManager];
+
+  if (![fileManager fileExistsAtPath:newFilePath]) {
+    BOOL success = [fileManager createFileAtPath:newFilePath contents:nil attributes:nil];
+    
+    if (success) {
+      RCTLogInfo(@"✅ Created new file at %@", newFilePath);
+    } else {
+      RCTLogError(@"❌ Failed to create file at %@", newFilePath);
+    }
+  } else {
+    RCTLogInfo(@"ℹ️ File already exists at %@", newFilePath);
+  }
+
+  NSString *inBuiltPatchPath = [[NSBundle mainBundle] pathForResource:@"react" ofType:@"patch"];
+  
 
   const char *oldFile = [oldFilePath UTF8String];
   const char *newFile = [newFilePath UTF8String];
-  const char *patchFile = [patchFilePath UTF8String];
+  const char *patchFile = [inBuiltPatchPath UTF8String];
 
   int res = bspatch(oldFile, newFile, patchFile);
 
