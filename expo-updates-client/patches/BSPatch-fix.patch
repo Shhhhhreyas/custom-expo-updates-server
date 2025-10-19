@@ -1,0 +1,11 @@
+--- ios/Pods/BSPatch/BSPatch/Classes/bzip2/bzip2.c	2025-10-19 13:03:41
++++ ios/Pods/BSPatchh/BSPatch/Classes/bzip2/bzip2.c	2025-10-15 18:18:19
+@@ -743,7 +743,7 @@
+ 
+ /*---------------------------------------------*/
+ static 
+-void __attribute__((overloadable)) panic ( const Char* s )
++void panic ( const Char* s )
+ {
+    fprintf ( stderr,
+              "\n%s: PANIC -- internal consistency error:\n"
