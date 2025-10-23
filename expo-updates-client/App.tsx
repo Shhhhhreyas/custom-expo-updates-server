@@ -120,6 +120,23 @@ const App = () => {
           showProgressValueText
         />
       ) : null}
+      <ButtonView
+        disabled={false}
+        type={ButtonViewType.SECONDARY_SMALL}
+        onPress={() => {
+          Updates.reloadAsync({
+            reloadScreenOptions: {
+              backgroundColor: "#f00",
+              image: {
+                height: 1000,
+                width: 1000,
+                url: require("./assets/icon.png"),
+              },
+            },
+          });
+        }}
+        text="Press to reload JS"
+      />
     </View>
   );
 };

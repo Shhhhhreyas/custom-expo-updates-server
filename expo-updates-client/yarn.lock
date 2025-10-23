@@ -1370,7 +1370,7 @@
     base64-js "^1.2.3"
     xmlbuilder "^15.1.1"
 
-"@expo/plist@^0.4.7":
+"@expo/plist@^0.4.0", "@expo/plist@^0.4.7":
   version "0.4.7"
   resolved "https://registry.yarnpkg.com/@expo/plist/-/plist-0.4.7.tgz#40fa796e93d5be0452ce72e5110e69c8ac915403"
   integrity sha512-dGxqHPvCZKeRKDU1sJZMmuyVtcASuSYh1LPFVaM1DuffqPL36n6FMEL0iUqq2Tx3xhWk8wCnWl34IKplUjJDdA==
@@ -2910,7 +2910,7 @@ expo-constants@~17.1.7:
     "@expo/config" "~11.0.12"
     "@expo/env" "~1.0.7"
 
-expo-eas-client@~1.0.7:
+expo-eas-client@~1.0.0:
   version "1.0.7"
   resolved "https://registry.yarnpkg.com/expo-eas-client/-/expo-eas-client-1.0.7.tgz#9c9c7909d7bb9b6ceb4bef6875f1b9119ef22a8c"
   integrity sha512-Q/b1X0fM+3beqqvffok14pjxMF600NxopdSr9WJY61fF4xllcVnALS0kEudffp9ihMOfcb5xWYqzKj6jMqYDIw==
@@ -2937,7 +2937,7 @@ expo-keep-awake@~14.1.4:
   resolved "https://registry.yarnpkg.com/expo-keep-awake/-/expo-keep-awake-14.1.4.tgz#80197728563e0e17523e5a606fbd6fbed9639503"
   integrity sha512-wU9qOnosy4+U4z/o4h8W9PjPvcFMfZXrlUoKTMBW7F4pLqhkkP/5G4EviPZixv4XWFMjn1ExQ5rV6BX8GwJsWA==
 
-expo-manifests@~1.0.8:
+expo-manifests@~1.0.0:
   version "1.0.8"
   resolved "https://registry.yarnpkg.com/expo-manifests/-/expo-manifests-1.0.8.tgz#2ee1b33f974481d8cc5fc76352e0c78de5ff74d6"
   integrity sha512-nA5PwU2uiUd+2nkDWf9e71AuFAtbrb330g/ecvuu52bmaXtN8J8oiilc9BDvAX0gg2fbtOaZdEdjBYopt1jdlQ==
@@ -2983,19 +2983,19 @@ expo-updates-interface@~2.0.0:
   resolved "https://registry.yarnpkg.com/expo-updates-interface/-/expo-updates-interface-2.0.0.tgz#7721cb64c37bcb46b23827b2717ef451a9378749"
   integrity sha512-pTzAIufEZdVPKql6iMi5ylVSPqV1qbEopz9G6TSECQmnNde2nwq42PxdFBaUEd8IZJ/fdJLQnOT3m6+XJ5s7jg==
 
-expo-updates@~29.0.10:
-  version "29.0.12"
-  resolved "https://registry.yarnpkg.com/expo-updates/-/expo-updates-29.0.12.tgz#cb43a20a6d32426694d414a2551f7300a4f75631"
-  integrity sha512-gE3bU6qi5g8Y1TtBzoeHac3utR0i1Wj1ufThh+zpDyFjFbegFm+gwvNLVCBagZUClYKk/4CKxh5ytnwZmPzH+g==
+expo-updates@29.0.0:
+  version "29.0.0"
+  resolved "https://registry.yarnpkg.com/expo-updates/-/expo-updates-29.0.0.tgz#c81186a045b031f252e2b7e195558cce67d1346b"
+  integrity sha512-aUV8bRmyMcKbpJEzg89WF36SmNvgPEIwKU85kuiPS5hjqs0BMmJOvuzI0tKWDvA1Gu0pH7wdf0boUuJ4bXTwbw==
   dependencies:
     "@expo/code-signing-certificates" "0.0.5"
-    "@expo/plist" "^0.4.7"
+    "@expo/plist" "^0.4.0"
     "@expo/spawn-async" "^1.7.2"
     arg "4.1.0"
     chalk "^4.1.2"
     debug "^4.3.4"
-    expo-eas-client "~1.0.7"
-    expo-manifests "~1.0.8"
+    expo-eas-client "~1.0.0"
+    expo-manifests "~1.0.0"
     expo-structured-headers "~5.0.0"
     expo-updates-interface "~2.0.0"
     getenv "^2.0.0"

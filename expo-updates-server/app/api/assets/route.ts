@@ -75,7 +75,6 @@ export async function GET(req: NextRequest) {
       },
       status: 200,
     });
-    console.log('setting content length');
   } catch (error) {
     console.log(error);
     NextResponse.json({ error }, { status: 500 });
