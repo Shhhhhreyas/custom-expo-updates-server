@@ -3,7 +3,7 @@ import { createMocks } from 'node-mocks-http';
 import nullthrows from 'nullthrows';
 import { parseItem } from 'structured-headers';
 
-import handleManifest from '../pages/api/manifest';
+import { GET as handleManifest } from '../app/api/manifest/route';
 
 function isManifestMultipartPart(multipartPart: MultipartPart, part: string) {
   const [, parameters] = parseItem(nullthrows(multipartPart.headers.get('content-disposition')));

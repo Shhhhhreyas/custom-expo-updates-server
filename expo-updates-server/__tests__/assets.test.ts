@@ -1,6 +1,6 @@
 import { createMocks } from 'node-mocks-http';
 
-import handleAssets from '../pages/api/assets';
+import { GET as handleAssets } from '../app/api/assets/route';
 
 test('returns asset file', async () => {
   const { req, res } = createMocks({

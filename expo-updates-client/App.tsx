@@ -1,30 +1,27 @@
 import { StatusBar } from "expo-status-bar";
-import { StyleSheet, Text, View, Image } from "react-native";
+import { NativeModules, StyleSheet, Text, View, Image } from "react-native";
 import Constants from "expo-constants";
 import ButtonView, {
   ButtonViewType,
 } from "@airasia-phoenix/react-native/components/ButtonView";
+import SpinnerLoaderView from "@airasia-phoenix/react-native/components/SpinnerLoaderView";
 import { getColor, pd } from "@airasia-phoenix/react-native/utils";
 import * as Updates from "expo-updates";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import TextView from "@airasia-phoenix/react-native/components/TextView";
+import * as FileSystem from "expo-file-system";
+import { SpinnerLoaderViewStyle } from "@airasia-phoenix/react-native/components/SpinnerLoaderView/types";
 
 const App = () => {
-  const [isUpdateAvailable, setIsUpdateAvailable] = useState(false);
-  console.log("first: ", Updates.checkAutomatically);
+  const { downloadProgress, isChecking, isDownloading, isUpdateAvailable } =
+    Updates.useUpdates();
   async function checkForUpdates() {
     try {
-      const update = await Updates.checkForUpdateAsync();
-
-      if (update.isAvailable) {
-        setIsUpdateAvailable(true);
-      } else {
-        setIsUpdateAvailable(false);
-      }
+      await Updates.checkForUpdateAsync();
     } catch (error) {
-      setIsUpdateAvailable(false);
       // You can also add an alert() to see the error message in case of an error when fetching updates.
-      alert(`Error fetching latest Expo update: ${error}`);
+      console.log(`Error fetching Expo update: ${error}`);
+      alert(`Error fetching Expo update: ${error}`);
     }
   }
 
@@ -36,22 +33,38 @@ const App = () => {
     } catch (error) {
       console.log("Error in applying update: ", error);
       alert("Updated failed");
-    } finally {
-      setIsUpdateAvailable(false);
     }
   }
 
   useEffect(() => {
     checkForUpdates();
   }, []);
+
+  console.log("See downloadProgress: ", downloadProgress);
+
+  const { BSPatch } = NativeModules;
+
+  async function updateBundle() {
+    console.log("BSPatch: ", BSPatch.applyPatch);
+    try {
+      const newFilePath = FileSystem.bundleDirectory + "new.jsbundle";
+      const result = await BSPatch.applyPatch("", newFilePath);
+      console.log("✅", result);
+      alert("✅" + result);
+    } catch (err) {
+      console.error("❌ Patch failed:", err);
+      alert("❌ Patch failed:" + err);
+    }
+  }
+
   return (
     <View
       style={[
         styles.container,
-        { backgroundColor: getColor(pd.sys.colour.secondary_low) },
+        { backgroundColor: getColor(pd.sys.colour.container_low) },
       ]}
     >
-      <Text>Hey there, this is wokring! Changing this</Text>
+      <Text>Hey there, this is wokring! Progress working..!</Text>
       <Text>{Constants.expoConfig.name}</Text>
       <Image source={require("./assets/favicon.png")} />
       <StatusBar style="auto" />
@@ -60,9 +73,17 @@ const App = () => {
           disabled={false}
           type={ButtonViewType.PRIMARY_REGULAR}
           onPress={() => {
-            alert("Yayy..! Instantly working");
+            alert("Yayyy..! BSDiff testing");
           }}
           text="Press me to alert"
+        />
+        <ButtonView
+          disabled={false}
+          type={ButtonViewType.SECONDARY_REGULAR}
+          onPress={() => {
+            updateBundle();
+          }}
+          text="Press me to patch bundle"
         />
       </View>
       {isUpdateAvailable ? (
@@ -78,8 +99,27 @@ const App = () => {
           />
         </View>
       ) : (
-        <TextView text="No updates available!" />
+        <TextView
+          text={isChecking ? "Checking for updates!" : "No updates available!"}
+        />
       )}
+      {!isChecking || !isDownloading ? (
+        <ButtonView
+          disabled={false}
+          type={ButtonViewType.SECONDARY_SMALL}
+          onPress={() => {
+            checkForUpdates();
+          }}
+          text="Press to check for updates"
+        />
+      ) : null}
+      {isDownloading ? (
+        <SpinnerLoaderView
+          spinnerStyle={SpinnerLoaderViewStyle.PROGRESS}
+          progressValue={downloadProgress}
+          showProgressValueText
+        />
+      ) : null}
     </View>
   );
 };

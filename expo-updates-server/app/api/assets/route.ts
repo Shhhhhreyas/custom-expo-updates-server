@@ -1,33 +1,36 @@
 import fs from 'fs';
 import fsPromises from 'fs/promises';
 import mime from 'mime';
-import { NextApiRequest, NextApiResponse } from 'next';
 import nullthrows from 'nullthrows';
 import path from 'path';
 
 import {
   getLatestUpdateBundlePathForRuntimeVersionAsync,
   getMetadataAsync,
-} from '../../common/helpers';
+} from '../../../common/helpers';
+import { NextRequest, NextResponse } from 'next/server';
 
-export default async function assetsEndpoint(req: NextApiRequest, res: NextApiResponse) {
-  const { asset: assetName, runtimeVersion, platform } = req.query;
+export async function GET(req: NextRequest) {
+  const searchParams = req.nextUrl.searchParams;
+  const assetName = searchParams.get('asset');
+  const runtimeVersion = searchParams.get('runtimeVersion');
+  const platform = searchParams.get('platform');
 
   if (!assetName || typeof assetName !== 'string') {
-    res.statusCode = 400;
-    res.json({ error: 'No asset name provided.' });
+    NextResponse.json({ error: 'No asset name provided.' }, { status: 400 });
     return;
   }
 
   if (platform !== 'ios' && platform !== 'android') {
-    res.statusCode = 400;
-    res.json({ error: 'No platform provided. Expected "ios" or "android".' });
+    NextResponse.json(
+      { error: 'No platform provided. Expected "ios" or "android".' },
+      { status: 400 }
+    );
     return;
   }
 
   if (!runtimeVersion || typeof runtimeVersion !== 'string') {
-    res.statusCode = 400;
-    res.json({ error: 'No runtimeVersion provided.' });
+    NextResponse.json({ error: 'No runtimeVersion provided.' }, { status: 400 });
     return;
   }
 
@@ -35,10 +38,12 @@ export default async function assetsEndpoint(req: NextApiRequest, res: NextApiRe
   try {
     updateBundlePath = await getLatestUpdateBundlePathForRuntimeVersionAsync(runtimeVersion);
   } catch (error: any) {
-    res.statusCode = 404;
-    res.json({
-      error: error.message,
-    });
+    NextResponse.json(
+      {
+        error: error.message,
+      },
+      { status: 404 }
+    );
     return;
   }
 
@@ -55,23 +60,24 @@ export default async function assetsEndpoint(req: NextApiRequest, res: NextApiRe
     metadataJson.fileMetadata[platform].bundle === assetName.replace(`${updateBundlePath}/`, '');
 
   if (!fs.existsSync(assetPath)) {
-    res.statusCode = 404;
-    res.json({ error: `Asset "${assetName}" does not exist.` });
+    NextResponse.json({ error: `Asset "${assetName}" does not exist.` }, { status: 404 });
     return;
   }
 
   try {
     const asset = await fsPromises.readFile(assetPath, null);
-
-    res.statusCode = 200;
-    res.setHeader(
-      'content-type',
-      isLaunchAsset ? 'application/javascript' : nullthrows(mime.getType(assetMetadata.ext))
-    );
-    res.end(asset);
+    return new Response(asset, {
+      headers: {
+        'content-type': isLaunchAsset
+          ? 'application/javascript'
+          : nullthrows(mime.getType(assetMetadata.ext)),
+        'Content-Length': asset.length.toString(),
+      },
+      status: 200,
+    });
+    console.log('setting content length');
   } catch (error) {
     console.log(error);
-    res.statusCode = 500;
-    res.json({ error });
+    NextResponse.json({ error }, { status: 500 });
   }
 }

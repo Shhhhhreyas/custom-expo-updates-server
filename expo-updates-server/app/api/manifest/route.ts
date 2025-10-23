@@ -1,7 +1,7 @@
 import FormData from 'form-data';
 import fs from 'fs/promises';
-import { NextApiRequest, NextApiResponse } from 'next';
 import { serializeDictionary } from 'structured-headers';
+import { NextRequest, NextResponse } from 'next/server';
 
 import {
   getAssetMetadataAsync,
@@ -15,47 +15,53 @@ import {
   createRollBackDirectiveAsync,
   NoUpdateAvailableError,
   createNoUpdateAvailableDirectiveAsync,
-} from '../../common/helpers';
+} from '../../../common/helpers';
+import { headers } from 'next/headers';
+import { ReadonlyHeaders } from 'next/dist/server/web/spec-extension/adapters/headers';
 
-export default async function manifestEndpoint(req: NextApiRequest, res: NextApiResponse) {
-  console.log('headers: ', req.headers);
+export async function GET(req: NextRequest) {
+  const headersList = await headers();
+  const searchParams = req.nextUrl.searchParams;
+  console.log('headers: ', Object.fromEntries(headersList.entries()));
   if (req.method !== 'GET') {
     console.log('Expected GET.');
-    res.statusCode = 405;
-    res.json({ error: 'Expected GET.' });
-    return;
+    return NextResponse.json({ error: 'Expected GET.' }, { status: 405 });
   }
 
-  const protocolVersionMaybeArray = req.headers['expo-protocol-version'];
+  const protocolVersionMaybeArray = headersList.get('expo-protocol-version');
   if (protocolVersionMaybeArray && Array.isArray(protocolVersionMaybeArray)) {
     console.log('Unsupported protocol version. Expected either 0 or 1.');
-    res.statusCode = 400;
-    res.json({
-      error: 'Unsupported protocol version. Expected either 0 or 1.',
-    });
-    return;
+    return NextResponse.json(
+      {
+        error: 'Unsupported protocol version. Expected either 0 or 1.',
+      },
+      { status: 400 }
+    );
   }
   const protocolVersion = parseInt(protocolVersionMaybeArray ?? '0', 10);
 
-  const platform = req.headers['expo-platform'] ?? req.query['platform'];
+  const platform = headersList.get('expo-platform') ?? searchParams.get('platform');
   if (platform !== 'ios' && platform !== 'android') {
     console.log('Unsupported platform. Expected either ios or android.');
-    res.statusCode = 400;
-    res.json({
-      error: 'Unsupported platform. Expected either ios or android.',
-    });
-    return;
+    return NextResponse.json(
+      {
+        error: 'Unsupported platform. Expected either ios or android.',
+      },
+      { status: 400 }
+    );
   }
 
-  const runtimeVersion = req.headers['expo-runtime-version'] ?? req.query['runtime-version'];
+  const runtimeVersion =
+    headersList.get('expo-runtime-version') ?? searchParams.get('runtime-version');
   console.log('runtimeVersion: ', runtimeVersion);
   if (!runtimeVersion || typeof runtimeVersion !== 'string') {
     console.log('No runtimeVersion provided.');
-    res.statusCode = 400;
-    res.json({
-      error: 'No runtimeVersion provided.',
-    });
-    return;
+    return NextResponse.json(
+      {
+        error: 'No runtimeVersion provided.',
+      },
+      { status: 400 }
+    );
   }
 
   let updateBundlePath: string;
@@ -64,11 +70,12 @@ export default async function manifestEndpoint(req: NextApiRequest, res: NextApi
     console.log('updateBundlePath: ', updateBundlePath);
   } catch (error: any) {
     console.log('Error in getLatestUpdateBundlePathForRuntimeVersionAsync: ', error.message);
-    res.statusCode = 404;
-    res.json({
-      error: error.message,
-    });
-    return;
+    return NextResponse.json(
+      {
+        error: error.message,
+      },
+      { status: 404 }
+    );
   }
 
   const updateType = await getTypeOfUpdateAsync(updateBundlePath);
@@ -77,29 +84,26 @@ export default async function manifestEndpoint(req: NextApiRequest, res: NextApi
     try {
       console.log('Came till here: ', updateType);
       if (updateType === UpdateType.NORMAL_UPDATE) {
-        await putUpdateInResponseAsync(
-          req,
-          res,
+        return await putUpdateInResponseAsync(
+          headersList,
           updateBundlePath,
           runtimeVersion,
           platform,
           protocolVersion
         );
       } else if (updateType === UpdateType.ROLLBACK) {
-        await putRollBackInResponseAsync(req, res, updateBundlePath, protocolVersion);
+        return await putRollBackInResponseAsync(headersList, updateBundlePath, protocolVersion);
       }
     } catch (maybeNoUpdateAvailableError) {
-      console.log('Error in maybeNoUpdateAvailableError upside: ', maybeNoUpdateAvailableError);
+      //console.log('Error in maybeNoUpdateAvailableError upside: ', maybeNoUpdateAvailableError);
       if (maybeNoUpdateAvailableError instanceof NoUpdateAvailableError) {
-        await putNoUpdateAvailableInResponseAsync(req, res, protocolVersion);
-        return;
+        return await putNoUpdateAvailableInResponseAsync(headersList, protocolVersion);
       }
       throw maybeNoUpdateAvailableError;
     }
   } catch (error) {
     console.error('Error in maybeNoUpdateAvailableError:', error);
-    res.statusCode = 404;
-    res.json({ error });
+    return NextResponse.json({ error }, { status: 404 });
   }
 }
 
@@ -115,14 +119,13 @@ async function getTypeOfUpdateAsync(updateBundlePath: string): Promise<UpdateTyp
 }
 
 async function putUpdateInResponseAsync(
-  req: NextApiRequest,
-  res: NextApiResponse,
+  headersList: ReadonlyHeaders,
   updateBundlePath: string,
   runtimeVersion: string,
   platform: string,
   protocolVersion: number
-): Promise<void> {
-  const currentUpdateId = req.headers['expo-current-update-id'];
+): Promise<Response> {
+  const currentUpdateId = headersList.get('expo-current-update-id');
   const { metadataJson, createdAt, id } = await getMetadataAsync({
     updateBundlePath,
     runtimeVersion,
@@ -170,16 +173,17 @@ async function putUpdateInResponseAsync(
   };
 
   let signature = null;
-  const expectSignatureHeader = req.headers['expo-expect-signature'];
+  const expectSignatureHeader = headersList.get('expo-expect-signature');
   if (expectSignatureHeader) {
     const privateKey = await getPrivateKeyAsync();
     if (!privateKey) {
       console.log('Code signing requested but no key supplied when starting server.');
-      res.statusCode = 400;
-      res.json({
-        error: 'Code signing requested but no key supplied when starting server.',
-      });
-      return;
+      return NextResponse.json(
+        {
+          error: 'Code signing requested but no key supplied when starting server.',
+        },
+        { status: 400 }
+      );
     }
     const manifestString = JSON.stringify(manifest);
     const hashSignature = signRSASHA256(manifestString, privateKey);
@@ -210,31 +214,31 @@ async function putUpdateInResponseAsync(
     contentType: 'application/json',
   });
 
-  res.statusCode = 200;
-  res.setHeader('expo-protocol-version', protocolVersion);
-  res.setHeader('expo-sfv-version', 0);
-  res.setHeader('cache-control', 'private, max-age=0');
-  res.setHeader('content-type', `multipart/mixed; boundary=${form.getBoundary()}`);
-  res.write(form.getBuffer());
-  res.end();
+  const headers = {
+    'expo-protocol-version': protocolVersion.toString(),
+    'expo-sfv-version': '0',
+    'cache-control': 'private, max-age=0',
+    'content-type': `multipart/mixed; boundary=${form.getBoundary()}`,
+  };
+  const buffer = form.getBuffer();
+  return new NextResponse(buffer, { status: 200, headers });
 }
 
 async function putRollBackInResponseAsync(
-  req: NextApiRequest,
-  res: NextApiResponse,
+  headersList: ReadonlyHeaders,
   updateBundlePath: string,
   protocolVersion: number
-): Promise<void> {
+): Promise<Response> {
   if (protocolVersion === 0) {
     throw new Error('Rollbacks not supported on protocol version 0');
   }
 
-  const embeddedUpdateId = req.headers['expo-embedded-update-id'];
+  const embeddedUpdateId = headersList.get('expo-embedded-update-id');
   if (!embeddedUpdateId || typeof embeddedUpdateId !== 'string') {
     throw new Error('Invalid Expo-Embedded-Update-ID request header specified.');
   }
 
-  const currentUpdateId = req.headers['expo-current-update-id'];
+  const currentUpdateId = headersList.get('expo-current-update-id');
   if (currentUpdateId === embeddedUpdateId) {
     throw new NoUpdateAvailableError();
   }
@@ -242,16 +246,17 @@ async function putRollBackInResponseAsync(
   const directive = await createRollBackDirectiveAsync(updateBundlePath);
 
   let signature = null;
-  const expectSignatureHeader = req.headers['expo-expect-signature'];
+  const expectSignatureHeader = headersList.get('expo-expect-signature');
   if (expectSignatureHeader) {
     const privateKey = await getPrivateKeyAsync();
     if (!privateKey) {
       console.log('Code signing requested but no key supplied when starting server.');
-      res.statusCode = 400;
-      res.json({
-        error: 'Code signing requested but no key supplied when starting server.',
-      });
-      return;
+      return NextResponse.json(
+        {
+          error: 'Code signing requested but no key supplied when starting server.',
+        },
+        { status: 400 }
+      );
     }
     const directiveString = JSON.stringify(directive);
     const hashSignature = signRSASHA256(directiveString, privateKey);
@@ -271,20 +276,20 @@ async function putRollBackInResponseAsync(
     },
   });
 
-  res.statusCode = 200;
-  res.setHeader('expo-protocol-version', 1);
-  res.setHeader('expo-sfv-version', 0);
-  res.setHeader('cache-control', 'private, max-age=0');
-  res.setHeader('content-type', `multipart/mixed; boundary=${form.getBoundary()}`);
-  res.write(form.getBuffer());
-  res.end();
+  const headers = {
+    'expo-protocol-version': '1',
+    'expo-sfv-version': '0',
+    'cache-control': 'private, max-age=0',
+    'content-type': `multipart/mixed; boundary=${form.getBoundary()}`,
+  };
+  const buffer = form.getBuffer();
+  return new NextResponse(buffer, { status: 200, headers });
 }
 
 async function putNoUpdateAvailableInResponseAsync(
-  req: NextApiRequest,
-  res: NextApiResponse,
+  headersList: ReadonlyHeaders,
   protocolVersion: number
-): Promise<void> {
+): Promise<Response> {
   if (protocolVersion === 0) {
     throw new Error('NoUpdateAvailable directive not available in protocol version 0');
   }
@@ -292,18 +297,20 @@ async function putNoUpdateAvailableInResponseAsync(
   const directive = await createNoUpdateAvailableDirectiveAsync();
 
   let signature = null;
-  const expectSignatureHeader = req.headers['expo-expect-signature'];
+  const expectSignatureHeader = headersList.get('expo-expect-signature');
   if (expectSignatureHeader) {
     const privateKey = await getPrivateKeyAsync();
     if (!privateKey) {
       console.log(
         'putNoUpdateAvailableInResponseAsync: Code signing requested but no key supplied when starting server.'
       );
-      res.statusCode = 400;
-      res.json({
-        error: 'Code signing requested but no key supplied when starting server.',
-      });
-      return;
+
+      return NextResponse.json(
+        {
+          error: 'Code signing requested but no key supplied when starting server.',
+        },
+        { status: 400 }
+      );
     }
     const directiveString = JSON.stringify(directive);
     const hashSignature = signRSASHA256(directiveString, privateKey);
@@ -323,11 +330,12 @@ async function putNoUpdateAvailableInResponseAsync(
     },
   });
 
-  res.statusCode = 200;
-  res.setHeader('expo-protocol-version', 1);
-  res.setHeader('expo-sfv-version', 0);
-  res.setHeader('cache-control', 'private, max-age=0');
-  res.setHeader('content-type', `multipart/mixed; boundary=${form.getBoundary()}`);
-  res.write(form.getBuffer());
-  res.end();
+  const headers = {
+    'expo-protocol-version': '1',
+    'expo-sfv-version': '0',
+    'cache-control': 'private, max-age=0',
+    'content-type': `multipart/mixed; boundary=${form.getBoundary()}`,
+  };
+  const buffer = form.getBuffer();
+  return new NextResponse(buffer, { status: 200, headers });
 }
