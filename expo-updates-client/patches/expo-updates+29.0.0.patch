@@ -1,0 +1,15 @@
+diff --git a/node_modules/expo-updates/utils/build/createManifestForBuildAsync.js b/node_modules/expo-updates/utils/build/createManifestForBuildAsync.js
+index 6745c25..496e6d7 100644
+--- a/node_modules/expo-updates/utils/build/createManifestForBuildAsync.js
++++ b/node_modules/expo-updates/utils/build/createManifestForBuildAsync.js
+@@ -5,8 +5,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
+ Object.defineProperty(exports, "__esModule", { value: true });
+ exports.createManifestForBuildAsync = createManifestForBuildAsync;
+ const crypto_1 = __importDefault(require("crypto"));
+-const paths_1 = require("expo/config/paths");
+-const unstable_expo_updates_cli_exports_1 = require("expo/internal/unstable-expo-updates-cli-exports");
++const paths_1 = require("@expo/config/paths");
++const unstable_expo_updates_cli_exports_1 = require("@expo/cli/build/src/export/embed/exportEmbedAsync");
+ const fs_1 = __importDefault(require("fs"));
+ const path_1 = __importDefault(require("path"));
+ const filterPlatformAssetScales_1 = require("./filterPlatformAssetScales");
